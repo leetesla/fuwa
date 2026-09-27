@@ -51,7 +51,12 @@ struct PresentationTests {
         model.clearAll()
         model.pinFrontWindow()
         #expect(!requestedPin)
-        try? await Task.sleep(for: .milliseconds(40))
+        // Wait for completion rather than assuming the main actor has run
+        // both tasks within 40 ms on a loaded CI runner.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while model.isClearingAll && ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
         #expect(!model.isClearingAll)
     }
 
