@@ -47,6 +47,13 @@ public struct KeyboardShortcut: Codable, Equatable, Hashable, Sendable {
         modifiers: [.option, .command]
     )
 
+    /// Default shortcut for toggling overlay layout mode. kVK_ANSI_L is 37.
+    public static let defaultLayout = Self(
+        keyCode: 37,
+        keyLabel: "L",
+        modifiers: [.option, .command]
+    )
+
     public let keyCode: UInt32
     public let keyLabel: String
     public let modifiers: Modifiers
