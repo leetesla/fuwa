@@ -124,9 +124,9 @@ private struct ShortcutCaptureHost: NSViewRepresentable {
 
 @MainActor
 private final class ShortcutCaptureNSView: NSView {
-    var onCapture: ((FuwaCore.KeyboardShortcut) -> Void)?
-    var onInvalid: (() -> Void)?
-    var onCancel: (() -> Void)?
+    var onCapture: (@MainActor (FuwaCore.KeyboardShortcut) -> Void)?
+    var onInvalid: (@MainActor () -> Void)?
+    var onCancel: (@MainActor () -> Void)?
 
     private var isRecording = false
 
