@@ -52,6 +52,10 @@ struct FuwaAppActions {
     var clearAll: @MainActor () async throws -> Void = {}
     var updateShortcut: @MainActor (KeyboardShortcut) async throws
         -> KeyboardShortcutRegistrationOutcome = { _ in .failed }
+    var updateLayoutShortcut: @MainActor (KeyboardShortcut) async throws
+        -> KeyboardShortcutRegistrationOutcome = { _ in .failed }
+    var updateOverlayOpacity: @MainActor (Double) -> Void = { _ in }
+    var updateCaptureQuality: @MainActor (OverlayCaptureQuality) -> Void = { _ in }
     var updateLaunchAtLogin: @MainActor (Bool) async throws
         -> FuwaLaunchAtLoginState = { _ in .disabled }
     var openScreenRecordingSettings: @MainActor () -> Void = {}
@@ -84,6 +88,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var shortcutIsActive: Bool {
         didSet { onStatusPresentationChanged?() }
     }
+    @Published private(set) var layoutShortcut: KeyboardShortcut
+    @Published private(set) var layoutShortcutIsActive: Bool
+    @Published private(set) var overlayOpacity: Double
+    @Published private(set) var captureQuality: OverlayCaptureQuality
+    @Published private(set) var isLayoutModeEnabled = false
     @Published private(set) var launchAtLoginState: FuwaLaunchAtLoginState
     @Published private(set) var screenRecordingPermission: FuwaPermissionState
     @Published private(set) var accessibilityPermission: FuwaPermissionState
@@ -93,6 +102,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var isPinningFrontWindow = false
     @Published private(set) var isClearingAll = false
     @Published private(set) var isUpdatingShortcut = false
+    @Published private(set) var isUpdatingLayoutShortcut = false
     @Published private(set) var isUpdatingLaunchAtLogin = false
     @Published private(set) var softwareUpdate: SoftwareUpdateState
 
@@ -108,6 +118,10 @@ final class AppModel: ObservableObject {
         version: String = "0.1.9",
         shortcut: KeyboardShortcut = .defaultPin,
         shortcutIsActive: Bool = true,
+        layoutShortcut: KeyboardShortcut = .defaultLayout,
+        layoutShortcutIsActive: Bool = true,
+        overlayOpacity: Double = 0.55,
+        captureQuality: OverlayCaptureQuality = .ultra,
         launchAtLoginState: FuwaLaunchAtLoginState = .disabled,
         screenRecordingPermission: FuwaPermissionState = .unknown,
         accessibilityPermission: FuwaPermissionState = .unknown,
@@ -118,6 +132,10 @@ final class AppModel: ObservableObject {
         self.version = version
         self.shortcut = shortcut
         self.shortcutIsActive = shortcutIsActive
+        self.layoutShortcut = layoutShortcut
+        self.layoutShortcutIsActive = layoutShortcutIsActive
+        self.overlayOpacity = min(1, max(0.2, overlayOpacity))
+        self.captureQuality = captureQuality
         self.launchAtLoginState = launchAtLoginState
         self.screenRecordingPermission = screenRecordingPermission
         self.accessibilityPermission = accessibilityPermission
@@ -443,6 +461,66 @@ final class AppModel: ObservableObject {
                 presentError(error)
             }
         }
+    }
+
+    func proposeLayoutShortcut(_ proposed: KeyboardShortcut) {
+        guard !isUpdatingLayoutShortcut else { return }
+
+        let update: KeyboardShortcutUpdate
+        do {
+            update = try KeyboardShortcutUpdate(
+                previous: layoutShortcut,
+                proposed: proposed
+            )
+        } catch {
+            notice = FuwaNotice(kind: .error, message: copy.text(.invalidShortcut))
+            return
+        }
+
+        isUpdatingLayoutShortcut = true
+        notice = nil
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { isUpdatingLayoutShortcut = false }
+
+            do {
+                let outcome = try await actions.updateLayoutShortcut(proposed)
+                layoutShortcut = update.resolvedValue(after: outcome)
+                switch outcome {
+                case .registered:
+                    layoutShortcutIsActive = true
+                case .conflict:
+                    layoutShortcutIsActive = true
+                    notice = FuwaNotice(kind: .error, message: copy.text(.shortcutConflict))
+                case .failed:
+                    layoutShortcutIsActive = true
+                    notice = FuwaNotice(kind: .error, message: copy.text(.shortcutFailed))
+                case .inactive:
+                    layoutShortcutIsActive = false
+                    notice = FuwaNotice(kind: .error, message: copy.text(.shortcutInactive))
+                }
+            } catch {
+                layoutShortcut = update.rolledBackValue
+                presentError(error)
+            }
+        }
+    }
+
+    func setOverlayOpacity(_ value: Double) {
+        let clamped = min(1, max(0.2, value))
+        guard abs(clamped - overlayOpacity) > 0.0001 else { return }
+        overlayOpacity = clamped
+        actions.updateOverlayOpacity(clamped)
+    }
+
+    func setCaptureQuality(_ quality: OverlayCaptureQuality) {
+        guard captureQuality != quality else { return }
+        captureQuality = quality
+        actions.updateCaptureQuality(quality)
+    }
+
+    func updateLayoutModeState(_ enabled: Bool) {
+        isLayoutModeEnabled = enabled
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {
