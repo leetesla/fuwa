@@ -114,6 +114,19 @@ final class PinSession {
     }
 
     static func overlayStorageKey(for target: ResolvedTarget) -> String {
+        "\(overlayApplicationKey(for: target))::\(displayTitle(
+            target.window.title,
+            fallback: target.window.owningApplication?.applicationName
+                ?? target.descriptor.ownerName
+                ?? "window"
+        ))"
+    }
+
+    static func overlayFallbackStorageKey(for target: ResolvedTarget) -> String {
+        overlayApplicationKey(for: target)
+    }
+
+    private static func overlayApplicationKey(for target: ResolvedTarget) -> String {
         target.window.owningApplication?.bundleIdentifier
             ?? target.descriptor.ownerBundleIdentifier
             ?? target.window.owningApplication?.applicationName
