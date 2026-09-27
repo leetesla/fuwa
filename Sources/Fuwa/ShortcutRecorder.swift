@@ -7,7 +7,7 @@ struct ShortcutRecorder: View {
     let shortcut: KeyboardShortcut
     let isUpdating: Bool
     let copy: FuwaCopy
-    let onCapture: (KeyboardShortcut) -> Void
+    let onCapture: @MainActor (KeyboardShortcut) -> Void
 
     @State private var isRecording = false
     @State private var hasInvalidInput = false
@@ -97,11 +97,12 @@ struct ShortcutRecorder: View {
     }
 }
 
+@MainActor
 private struct ShortcutCaptureHost: NSViewRepresentable {
     let isRecording: Bool
-    let onCapture: (FuwaCore.KeyboardShortcut) -> Void
-    let onInvalid: () -> Void
-    let onCancel: () -> Void
+    let onCapture: @MainActor (FuwaCore.KeyboardShortcut) -> Void
+    let onInvalid: @MainActor () -> Void
+    let onCancel: @MainActor () -> Void
 
     func makeNSView(context: Context) -> ShortcutCaptureNSView {
         let view = ShortcutCaptureNSView()
