@@ -4,11 +4,13 @@ import SwiftUI
 
 @MainActor
 struct ShortcutRecorder: View {
-    @ObservedObject var model: AppModel
+    let shortcut: KeyboardShortcut
+    let isUpdating: Bool
+    let copy: FuwaCopy
+    let onCapture: (KeyboardShortcut) -> Void
+
     @State private var isRecording = false
     @State private var hasInvalidInput = false
-
-    private var copy: FuwaCopy { model.copy }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
@@ -21,7 +23,7 @@ struct ShortcutRecorder: View {
                 }
             } label: {
                 HStack(spacing: 7) {
-                    if model.isUpdatingShortcut {
+                    if isUpdating {
                         ProgressView()
                             .controlSize(.mini)
                     } else {
@@ -33,7 +35,7 @@ struct ShortcutRecorder: View {
                         .font(.system(.callout, design: .monospaced).weight(.medium))
                         .monospacedDigit()
 
-                    if !isRecording && !model.isUpdatingShortcut {
+                    if !isRecording && !isUpdating {
                         Text(copy.text(.recordShortcut))
                             .font(.callout)
                             .foregroundStyle(FuwaAppearance.secondaryText)
@@ -42,7 +44,7 @@ struct ShortcutRecorder: View {
                 .frame(minWidth: 92)
             }
             .buttonStyle(FuwaQuietButtonStyle())
-            .disabled(model.isUpdatingShortcut)
+            .disabled(isUpdating)
             .help(isRecording ? copy.text(.cancel) : copy.text(.recordShortcut))
             .accessibilityLabel(accessibilityTitle)
 
@@ -60,7 +62,7 @@ struct ShortcutRecorder: View {
                 onCapture: { shortcut in
                     isRecording = false
                     hasInvalidInput = false
-                    model.proposeShortcut(shortcut)
+                    onCapture(shortcut)
                 },
                 onInvalid: {
                     hasInvalidInput = true
@@ -84,7 +86,7 @@ struct ShortcutRecorder: View {
         if isRecording {
             return copy.text(.pressShortcut)
         }
-        return model.shortcut.displayString
+        return shortcut.displayString
     }
 
     private var accessibilityTitle: String {
