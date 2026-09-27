@@ -114,18 +114,11 @@ final class PinSession {
     }
 
     static func overlayStorageKey(for target: ResolvedTarget) -> String {
-        let application = target.window.owningApplication?.bundleIdentifier
+        target.window.owningApplication?.bundleIdentifier
             ?? target.descriptor.ownerBundleIdentifier
             ?? target.window.owningApplication?.applicationName
             ?? target.descriptor.ownerName
             ?? "app"
-        let title = displayTitle(
-            target.window.title,
-            fallback: target.window.owningApplication?.applicationName
-                ?? target.descriptor.ownerName
-                ?? "window"
-        )
-        return "\(application)::\(title)"
     }
 
     var state: PinState {
@@ -830,10 +823,10 @@ final class PinSession {
 
     private static func nsRect(from frame: OverlayFrame) -> NSRect {
         NSRect(
-            x: frame.x,
-            y: frame.y,
-            width: frame.width,
-            height: frame.height
+            x: CGFloat(frame.x),
+            y: CGFloat(frame.y),
+            width: CGFloat(frame.width),
+            height: CGFloat(frame.height)
         )
     }
 
