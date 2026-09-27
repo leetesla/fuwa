@@ -684,7 +684,10 @@ final class PinSession {
 
         let sourceFrame = coordinateSpace.appKitFrame(fromQuartzFrame: descriptor.bounds)
         let savedFrame = initialOverlayFrame.map(Self.nsRect(from:))
-        let frame = savedFrame ?? sourceFrame
+        let frame = FloatingControlsLayout.recoveredFrame(
+            source: savedFrame ?? sourceFrame,
+            visibleScreens: NSScreen.screens.map(\.visibleFrame)
+        )
         let view = CaptureView(frame: NSRect(origin: .zero, size: frame.size))
         view.autoresizingMask = [.width, .height]
         let panel = NSPanel(
