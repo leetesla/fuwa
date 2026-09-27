@@ -272,7 +272,7 @@ struct SettingsView: View {
         shortcut: KeyboardShortcut,
         isActive: Bool,
         isUpdating: Bool,
-        onChange: @escaping (KeyboardShortcut) -> Void
+        onChange: @escaping @MainActor (KeyboardShortcut) -> Void
     ) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) {
