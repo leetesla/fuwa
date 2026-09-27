@@ -76,6 +76,17 @@ final class CaptureView: NSView {
         CATransaction.commit()
     }
 
+    func setLayoutMode(_ enabled: Bool) {
+        guard let layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        layer.borderWidth = enabled ? 2 : 0
+        layer.borderColor = enabled
+            ? NSColor.controlAccentColor.withAlphaComponent(0.9).cgColor
+            : NSColor.clear.cgColor
+        CATransaction.commit()
+    }
+
     func consume(_ sampleBuffer: CMSampleBuffer) -> FrameReceipt? {
         guard Self.isCompleteFrame(sampleBuffer) else { return nil }
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }
