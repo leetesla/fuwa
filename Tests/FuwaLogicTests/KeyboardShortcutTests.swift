@@ -12,6 +12,16 @@ func runKeyboardShortcutTests(runner: inout LogicTestRunner) {
     runner.expect(standard.displayString == "⌥⌘P", "the default shortcut renders as ⌥⌘P")
     runner.expect(standard.validationError == nil, "the default shortcut is valid")
 
+    let layout = KeyboardShortcut.defaultLayout
+    runner.expect(layout.keyCode == 37, "the default layout shortcut uses the L physical key")
+    runner.expect(layout.keyLabel == "L", "the default layout shortcut has a readable L label")
+    runner.expect(
+        layout.modifiers == [.option, .command],
+        "the default layout shortcut uses Option and Command"
+    )
+    runner.expect(layout.displayString == "⌥⌘L", "the layout shortcut renders as ⌥⌘L")
+    runner.expect(layout.validationError == nil, "the default layout shortcut is valid")
+
     do {
         let data = try JSONEncoder().encode(standard)
         let decoded = try JSONDecoder().decode(KeyboardShortcut.self, from: data)
