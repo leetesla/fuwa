@@ -270,7 +270,9 @@ final class PinCoordinator {
         session.onScreenRecordingRevoked = nil
         session.prepareForStop()
         session.onOverlayFrameChanged = nil
-        session.onOverlayFrameChanged = nil
+        if sessionsByID.isEmpty, layoutMode {
+            setLayoutMode(false)
+        }
         updateTrackerActivity()
         publishSnapshots()
         await session.stop()
@@ -293,6 +295,9 @@ final class PinCoordinator {
 
     private func prepareToClearAll() -> [PinSession] {
         operationGeneration &+= 1
+        if layoutMode {
+            setLayoutMode(false)
+        }
         let sessions = insertionOrder.compactMap { sessionsByID[$0] }
         sessionsByID.removeAll()
         sessionIDByWindowID.removeAll()
@@ -307,6 +312,7 @@ final class PinCoordinator {
             session.onFailure = nil
             session.onScreenRecordingRevoked = nil
             session.prepareForStop()
+            session.onOverlayFrameChanged = nil
         }
         publishSnapshots()
 
@@ -373,6 +379,9 @@ final class PinCoordinator {
         session.onScreenRecordingRevoked = nil
         session.prepareForStop()
         session.onOverlayFrameChanged = nil
+        if sessionsByID.isEmpty, layoutMode {
+            setLayoutMode(false)
+        }
         updateTrackerActivity()
         publishSnapshots()
         await session.stop()
