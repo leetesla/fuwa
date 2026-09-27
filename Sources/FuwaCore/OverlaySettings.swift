@@ -1,6 +1,6 @@
 import Foundation
 
-public enum OverlayCaptureQuality: String, CaseIterable, Codable, Equatable, Sendable {
+public enum OverlayCaptureQuality: String, CaseIterable, Codable, Equatable, Hashable, Sendable {
     case economy
     case high
     case ultra
