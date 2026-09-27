@@ -4,6 +4,7 @@ import SwiftUI
 
 @MainActor
 struct ShortcutRecorder: View {
+    let title: String
     let shortcut: KeyboardShortcut
     let isUpdating: Bool
     let copy: FuwaCopy
