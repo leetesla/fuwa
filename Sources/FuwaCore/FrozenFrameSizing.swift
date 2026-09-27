@@ -19,7 +19,7 @@ public enum FrozenFrameSizing {
     public static func fittedDimensions(
         sourceWidth: Int,
         sourceHeight: Int,
-        maxPixels: Int = 4_000_000
+        maxPixels: Int = 16_000_000
     ) -> PixelDimensions? {
         guard sourceWidth > 0, sourceHeight > 0, maxPixels > 0 else { return nil }
 
@@ -44,13 +44,13 @@ public enum FrozenFrameSizing {
 /// frame queue. Window geometry is reported in points, while stream dimensions
 /// are configured in pixels.
 public enum LiveCaptureSizing {
-    public static let maximumPixelCount = 4_000_000
+    public static let maximumPixelCount = 16_000_000
 
     public static func fittedDimensions(
         pointWidth: Double,
         pointHeight: Double,
         pointScale: Double,
-        maxPixels: Int = 4_000_000
+        maxPixels: Int = 16_000_000
     ) -> PixelDimensions? {
         guard pointWidth.isFinite,
               pointHeight.isFinite,
