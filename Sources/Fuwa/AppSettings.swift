@@ -7,6 +7,10 @@ final class AppSettingsStore {
     private enum Key {
         static let language = "language"
         static let shortcut = "shortcut"
+        static let layoutShortcut = "layoutShortcut"
+        static let overlayOpacity = "overlayOpacity"
+        static let captureQuality = "captureQuality"
+        static let overlayFrames = "overlayFrames"
         static let didRequestScreenRecording = "didRequestScreenRecording"
         static let didRequestAccessibility = "didRequestAccessibility"
     }
@@ -42,6 +46,79 @@ final class AppSettingsStore {
             }
             defaults.set(data, forKey: Key.shortcut)
         }
+    }
+
+    var layoutShortcut: KeyboardShortcut {
+        get {
+            guard
+                let data = defaults.data(forKey: Key.layoutShortcut),
+                let shortcut = try? decoder.decode(KeyboardShortcut.self, from: data),
+                shortcut.validationError == nil
+            else {
+                return .defaultLayout
+            }
+            return shortcut
+        }
+        set {
+            guard newValue.validationError == nil,
+                  let data = try? encoder.encode(newValue) else {
+                return
+            }
+            defaults.set(data, forKey: Key.layoutShortcut)
+        }
+    }
+
+    var overlayOpacity: Double {
+        get {
+            guard defaults.object(forKey: Key.overlayOpacity) != nil else { return 0.55 }
+            return min(1, max(0.2, defaults.double(forKey: Key.overlayOpacity)))
+        }
+        set {
+            defaults.set(min(1, max(0.2, newValue)), forKey: Key.overlayOpacity)
+        }
+    }
+
+    var captureQuality: OverlayCaptureQuality {
+        get {
+            guard let rawValue = defaults.string(forKey: Key.captureQuality) else {
+                return .ultra
+            }
+            return OverlayCaptureQuality(rawValue: rawValue) ?? .ultra
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: Key.captureQuality)
+        }
+    }
+
+    func overlayFrame(for key: String) -> OverlayFrame? {
+        guard
+            !key.isEmpty,
+            let data = defaults.data(forKey: Key.overlayFrames),
+            let frames = try? decoder.decode([String: OverlayFrame].self, from: data),
+            let frame = frames[key],
+            frame.isValid
+        else {
+            return nil
+        }
+        return frame
+    }
+
+    func setOverlayFrame(_ frame: OverlayFrame?, for key: String) {
+        guard !key.isEmpty else { return }
+        var frames: [String: OverlayFrame] = [:]
+        if let data = defaults.data(forKey: Key.overlayFrames),
+           let decoded = try? decoder.decode([String: OverlayFrame].self, from: data) {
+            frames = decoded
+        }
+
+        if let frame, frame.isValid {
+            frames[key] = frame
+        } else {
+            frames.removeValue(forKey: key)
+        }
+
+        guard let data = try? encoder.encode(frames) else { return }
+        defaults.set(data, forKey: Key.overlayFrames)
     }
 
     var didRequestScreenRecording: Bool {
