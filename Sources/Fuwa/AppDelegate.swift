@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let launchAtLoginController = LaunchAtLoginController()
 
     private var hotKey: GlobalHotKey?
+    private var layoutHotKey: GlobalHotKey?
     private var model: AppModel?
     private var statusBarController: StatusBarController?
     private var mainWindowController: MainWindowController?
@@ -36,10 +37,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let requestedShortcut = settingsStore.shortcut
-        let hotKey = GlobalHotKey { [weak self] in
+        let requestedLayoutShortcut = settingsStore.layoutShortcut
+
+        let hotKey = GlobalHotKey(identifier: 1) { [weak self] in
             self?.handleGlobalShortcut()
         }
         self.hotKey = hotKey
+
+        let layoutHotKey = GlobalHotKey(identifier: 2) { [weak self] in
+            self?.handleLayoutShortcut()
+        }
+        self.layoutHotKey = layoutHotKey
 
         var activeShortcut = requestedShortcut
         var shortcutLaunchError: Error?
@@ -58,11 +66,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        var activeLayoutShortcut = requestedLayoutShortcut
+        var layoutShortcutLaunchError: Error?
+        do {
+            try layoutHotKey.start(shortcut: requestedLayoutShortcut)
+        } catch {
+            layoutShortcutLaunchError = error
+            if requestedLayoutShortcut != .defaultLayout {
+                do {
+                    try layoutHotKey.start(shortcut: .defaultLayout)
+                    activeLayoutShortcut = .defaultLayout
+                    settingsStore.layoutShortcut = .defaultLayout
+                } catch {
+                    layoutShortcutLaunchError = error
+                }
+            }
+        }
+
         let model = AppModel(
             languagePreference: settingsStore.language,
             version: Self.version,
             shortcut: activeShortcut,
             shortcutIsActive: hotKey.currentShortcut != nil,
+            layoutShortcut: activeLayoutShortcut,
+            layoutShortcutIsActive: layoutHotKey.currentShortcut != nil,
+            overlayOpacity: settingsStore.overlayOpacity,
+            captureQuality: settingsStore.captureQuality,
             launchAtLoginState: launchAtLoginController.state,
             screenRecordingPermission: screenRecordingPermissionState,
             accessibilityPermission: accessibilityPermissionState
@@ -74,6 +103,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.mainMenu = FuwaApplicationMenu.make(quitTitle: model.copy.text(.quit))
         }
         pinCoordinator.presentationModel = model
+        pinCoordinator.setOverlayOpacity(settingsStore.overlayOpacity)
+        pinCoordinator.setCaptureQuality(settingsStore.captureQuality)
+        pinCoordinator.overlayFrameProvider = { [weak self] key in
+            self?.settingsStore.overlayFrame(for: key)
+        }
+        pinCoordinator.overlayFrameSaver = { [weak self] key, frame in
+            self?.settingsStore.setOverlayFrame(frame, for: key)
+        }
         NSApp.mainMenu = FuwaApplicationMenu.make(quitTitle: model.copy.text(.quit))
         do {
             softwareUpdateController = try SoftwareUpdateController(model: model)
@@ -111,6 +148,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let shortcutLaunchError {
             model.report(shortcutLaunchError)
         }
+        if let layoutShortcutLaunchError {
+            model.report(layoutShortcutLaunchError)
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -137,6 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         isTerminating = true
         discardPopoverIntent()
         hotKey?.stop()
+        layoutHotKey?.stop()
         privacyLifecycle.stop()
         model?.disengageInteraction()
         pinCoordinator.clearAllImmediately()
@@ -204,6 +245,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 return outcome
             },
+            updateLayoutShortcut: { [weak self] shortcut in
+                guard let self else { throw FuwaApplicationError.unavailable }
+                guard let layoutHotKey else { throw FuwaApplicationError.unavailable }
+                let outcome = try layoutHotKey.update(to: shortcut)
+                if outcome == .registered {
+                    settingsStore.layoutShortcut = shortcut
+                }
+                return outcome
+            },
+            updateOverlayOpacity: { [weak self] value in
+                guard let self else { return }
+                settingsStore.overlayOpacity = value
+                pinCoordinator.setOverlayOpacity(value)
+            },
+            updateCaptureQuality: { [weak self] quality in
+                guard let self else { return }
+                settingsStore.captureQuality = quality
+                pinCoordinator.setCaptureQuality(quality)
+            },
             updateLaunchAtLogin: { [weak self] enabled in
                 guard let self else { throw FuwaApplicationError.unavailable }
                 return try launchAtLoginController.setEnabled(enabled)
@@ -268,6 +328,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 model?.report(error)
             }
         }
+    }
+
+    private func handleLayoutShortcut() {
+        guard !isTerminating, pinCoordinator.pinCount > 0 else { return }
+        _ = pinCoordinator.toggleLayoutMode()
     }
 
     private func takePreparedPopoverIntent() throws -> TargetIntentSnapshot {
@@ -378,7 +443,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pinCoordinator.onFailure = { [weak model] error in
             model?.report(error)
         }
+        pinCoordinator.onLayoutModeChanged = { [weak model] enabled in
+            model?.updateLayoutModeState(enabled)
+        }
         model.updatePins(pinCoordinator.snapshots)
+        model.updateLayoutModeState(pinCoordinator.isLayoutModeEnabled)
     }
 
     private func configurePrivacyLifecycle() {
