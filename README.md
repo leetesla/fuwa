@@ -8,10 +8,12 @@
     · <a href="README_ZH.md">简体中文</a>
   </p>
   <p>
-    <a href="https://github.com/yuxino/fuwa/releases/latest"><img src="https://img.shields.io/github/v/release/yuxino/fuwa?logo=github&amp;logoColor=white&amp;style=flat-square&amp;labelColor=202020&amp;color=555" alt="Latest release"></a>
-    <a href="#requirements"><img src="https://img.shields.io/badge/platform-macOS%2014%2B-555?style=flat-square&amp;labelColor=202020&amp;color=555" alt="Requires macOS 14 or later"></a>
-    <a href="https://github.com/yuxino/fuwa/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yuxino/fuwa/ci.yml?branch=main&amp;event=push&amp;label=CI&amp;style=flat-square&amp;labelColor=202020&amp;color=555" alt="CI status on main"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/yuxino/fuwa?style=flat-square&amp;labelColor=202020&amp;color=555" alt="MIT license"></a>
+    <a href="https://github.com/yuxino/fuwa/releases/latest"><img src="https://img.shields.io/github/v/release/yuxino/fuwa?style=flat&amp;labelColor=62669A&amp;color=D0D7F7&amp;logo=github&amp;logoColor=white" alt="Latest release"></a>
+    <a href="https://github.com/yuxino/fuwa/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yuxino/fuwa/ci.yml?style=flat&amp;labelColor=2088FF&amp;logo=githubactions&amp;logoColor=white&amp;branch=main&amp;event=push&amp;label=CI" alt="CI status on main"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/yuxino/fuwa?style=flat&amp;labelColor=62669A&amp;color=D0D7F7&amp;logo=opensourceinitiative&amp;logoColor=white" alt="MIT license"></a>
+  </p>
+  <p>
+    <a href="https://github.com/yuxino/fuwa/releases/latest"><img src="https://img.shields.io/badge/macOS-14%2B-555?style=flat&amp;labelColor=555555&amp;color=D0D7F7&amp;logo=apple&amp;logoColor=white" alt="macOS 14+"></a>
   </p>
 </div>
 
