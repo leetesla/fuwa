@@ -185,9 +185,11 @@ final class PinCoordinator {
         }
 
         let overlayStorageKey = PinSession.overlayStorageKey(for: target)
+        let overlayFallbackStorageKey = PinSession.overlayFallbackStorageKey(for: target)
         let session = PinSession(
             target: target,
-            overlayFrame: overlayFrameProvider?(overlayStorageKey),
+            overlayFrame: overlayFrameProvider?(overlayStorageKey)
+                ?? overlayFrameProvider?(overlayFallbackStorageKey),
             overlayOpacity: overlayOpacity,
             captureQuality: captureQuality
         )
@@ -195,6 +197,7 @@ final class PinCoordinator {
         session.setLayoutMode(layoutMode)
         session.onOverlayFrameChanged = { [weak self] frame in
             self?.overlayFrameSaver?(overlayStorageKey, frame)
+            self?.overlayFrameSaver?(overlayFallbackStorageKey, frame)
         }
         configureCallbacks(for: session)
         sessionsByID[session.id] = session
