@@ -134,7 +134,7 @@ final class GlobalHotKey {
     private func register(_ shortcut: KeyboardShortcut) -> OSStatus {
         let identifier = EventHotKeyID(
             signature: Self.signature,
-            id: identifier
+            id: self.identifier
         )
         return RegisterEventHotKey(
             shortcut.keyCode,
