@@ -279,6 +279,7 @@ struct SettingsView: View {
                 shortcutDescription(title: title, note: note, isActive: isActive)
                 Spacer(minLength: 10)
                 ShortcutRecorder(
+                    title: title,
                     shortcut: shortcut,
                     isUpdating: isUpdating,
                     copy: copy,
@@ -290,6 +291,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 shortcutDescription(title: title, note: note, isActive: isActive)
                 ShortcutRecorder(
+                    title: title,
                     shortcut: shortcut,
                     isUpdating: isUpdating,
                     copy: copy,
