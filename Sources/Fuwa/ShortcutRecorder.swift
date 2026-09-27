@@ -93,7 +93,7 @@ struct ShortcutRecorder: View {
         if isRecording {
             return copy.text(.pressShortcut)
         }
-        return "\(copy.text(.shortcut)): \(model.shortcut.displayString)"
+        return "\(copy.text(.shortcut)): \(shortcut.displayString)"
     }
 }
 
