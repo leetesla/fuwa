@@ -111,13 +111,13 @@ final class GlobalHotKey {
                 let hotKey = Unmanaged<GlobalHotKey>
                     .fromOpaque(userData)
                     .takeUnretainedValue()
-                guard identifier.id == hotKey.identifier else {
-                    return OSStatus(eventNotHandledErr)
-                }
-                MainActor.assumeIsolated {
+                return MainActor.assumeIsolated {
+                    guard identifier.id == hotKey.identifier else {
+                        return OSStatus(eventNotHandledErr)
+                    }
                     hotKey.action()
+                    return noErr
                 }
-                return noErr
             },
             1,
             &eventType,
