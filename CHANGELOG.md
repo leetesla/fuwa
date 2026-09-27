@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### English
+
+- Add an independent overlay workflow: pinned mirrors keep their own position and size instead of tracking the source window. A configurable Layout Mode shortcut (default `⌥⌘L`) temporarily enables dragging and resizing, then restores full click-through.
+- Add persistent overlay opacity and capture-quality settings. Economy, High, and Ultra use 4 MP, 9 MP, and 16 MP budgets; Ultra is the default so common 4K/HiDPI TradingView layouts are not forced through the previous 4 MP cap.
+- Apply the selected pixel budget to both live and frozen frames, and preserve overlay geometry across relaunches.
+- Added logic and lifecycle coverage for the new shortcut, 4K sizing, quality presets, and persisted overlay settings. Full macOS CI still needs to run on this fork before release.
+
+### 中文
+
+- 新增独立 Overlay 工作流：置顶镜像拥有自己的位置和尺寸，不再跟随源窗口。可配置“布局模式”快捷键（默认 `⌥⌘L`），临时允许拖动和缩放，退出后恢复全区域鼠标穿透。
+- 新增可持久化的 Overlay 透明度与捕获画质设置。节能、高清、超清分别使用 4 MP、9 MP、16 MP 像素预算；默认超清，避免常见 4K/HiDPI TradingView 布局继续被原来的 4 MP 上限强制降采样。
+- 实时画面和冻结画面统一使用所选像素预算，并在重启后恢复 Overlay 几何位置。
+- 已补充新快捷键、4K 尺寸、画质档位和 Overlay 设置持久化测试；正式发布前仍需在此 fork 上跑通完整 macOS CI。
+
 ## [1.0.1] - 2026-09-23
 
 ### English
