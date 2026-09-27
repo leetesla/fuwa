@@ -7,6 +7,12 @@
     · <a href="https://github.com/yuxino/fuwa/releases"><strong>View releases</strong></a>
     · <a href="README_ZH.md">简体中文</a>
   </p>
+  <p>
+    <a href="https://github.com/yuxino/fuwa/releases/latest"><img src="https://img.shields.io/github/v/release/yuxino/fuwa?logo=github&amp;logoColor=white&amp;style=flat-square&amp;labelColor=202020&amp;color=555" alt="Latest release"></a>
+    <a href="#requirements"><img src="https://img.shields.io/badge/platform-macOS%2014%2B-555?style=flat-square&amp;labelColor=202020&amp;color=555" alt="Requires macOS 14 or later"></a>
+    <a href="https://github.com/yuxino/fuwa/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yuxino/fuwa/ci.yml?branch=main&amp;event=push&amp;label=CI&amp;style=flat-square&amp;labelColor=202020&amp;color=555" alt="CI status on main"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/yuxino/fuwa?style=flat-square&amp;labelColor=202020&amp;color=555" alt="MIT license"></a>
+  </p>
 </div>
 
 Fuwa keeps the window you need on top of other apps on your Mac. Keep a reference image, document, or tutorial visible while you work, without switching back and forth. The pinned view lets clicks pass through to the app underneath.

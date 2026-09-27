@@ -7,6 +7,12 @@
     · <a href="https://github.com/yuxino/fuwa/releases"><strong>查看发布版本</strong></a>
     · <a href="README.md">English</a>
   </p>
+  <p>
+    <a href="https://github.com/yuxino/fuwa/releases/latest"><img src="https://img.shields.io/github/v/release/yuxino/fuwa?logo=github&amp;logoColor=white&amp;style=flat-square&amp;labelColor=202020&amp;color=555" alt="最新版本"></a>
+    <a href="#要求"><img src="https://img.shields.io/badge/platform-macOS%2014%2B-555?style=flat-square&amp;labelColor=202020&amp;color=555" alt="支持 macOS 14 及以上"></a>
+    <a href="https://github.com/yuxino/fuwa/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yuxino/fuwa/ci.yml?branch=main&amp;event=push&amp;label=CI&amp;style=flat-square&amp;labelColor=202020&amp;color=555" alt="main 分支 CI 状态"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/yuxino/fuwa?style=flat-square&amp;labelColor=202020&amp;color=555" alt="MIT 许可证"></a>
+  </p>
 </div>
 
 Fuwa 是 macOS 窗口置顶工具。把参考图片、文档或教程窗口放在最上方，回到其他应用后也能继续查看，不用反复切换窗口。置顶画面不拦截鼠标，你可以照常操作下方的应用。
