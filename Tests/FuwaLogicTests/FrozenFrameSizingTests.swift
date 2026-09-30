@@ -84,12 +84,30 @@ func runFrozenFrameSizingTests(runner: inout LogicTestRunner) {
         pointScale: 2
     )
     runner.expect(
-        reducedLiveCapture == PixelDimensions(width: 2_666, height: 1_500),
-        "an 8K live capture is reduced proportionally"
+        reducedLiveCapture == PixelDimensions(width: 5_333, height: 3_000),
+        "an 8K live capture is reduced proportionally to the default 16 MP budget"
     )
     runner.expect(
         (reducedLiveCapture?.pixelCount ?? .max) <= LiveCaptureSizing.maximumPixelCount,
-        "a live capture never exceeds the shared four-megapixel budget"
+        "a live capture never exceeds the shared default pixel budget"
+    )
+
+    runner.expect(
+        OverlayCaptureQuality.economy.maximumPixelCount == 4_000_000
+            && OverlayCaptureQuality.high.maximumPixelCount == 9_000_000
+            && OverlayCaptureQuality.ultra.maximumPixelCount == 16_000_000,
+        "overlay quality presets expose the intended 4/9/16 MP budgets"
+    )
+
+    let fourKUltra = LiveCaptureSizing.fittedDimensions(
+        pointWidth: 3_840,
+        pointHeight: 2_160,
+        pointScale: 1,
+        maxPixels: OverlayCaptureQuality.ultra.maximumPixelCount
+    )
+    runner.expect(
+        fourKUltra == PixelDimensions(width: 3_840, height: 2_160),
+        "Ultra quality preserves a native 4K surface without downsampling"
     )
 
     let extremeLiveCapture = LiveCaptureSizing.fittedDimensions(

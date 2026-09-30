@@ -62,6 +62,7 @@ final class PinSession {
     var onGeometryChanged: (() -> Void)?
     var onFailure: ((Error) -> Void)?
     var onScreenRecordingRevoked: (() -> Void)?
+    var onOverlayFrameChanged: ((OverlayFrame) -> Void)?
 
     private(set) var descriptor: WindowDescriptor
     private(set) var coordinateSpace: DisplayCoordinateSpace
@@ -83,8 +84,18 @@ final class PinSession {
     private var teardownTask: Task<Void, Never>?
     private var missingObservationCount = 0
     private var isHandlingMissingSource = false
+    private var layoutMode = false
+    private var overlayOpacity: Double
+    private var captureQuality: OverlayCaptureQuality
+    private let initialOverlayFrame: OverlayFrame?
 
-    init(id: UUID = UUID(), target: ResolvedTarget) {
+    init(
+        id: UUID = UUID(),
+        target: ResolvedTarget,
+        overlayFrame: OverlayFrame? = nil,
+        overlayOpacity: Double = 0.55,
+        captureQuality: OverlayCaptureQuality = .ultra
+    ) {
         self.id = id
         descriptor = target.descriptor
         coordinateSpace = target.coordinateSpace
@@ -97,6 +108,30 @@ final class PinSession {
             target.window.title,
             fallback: applicationName
         )
+        initialOverlayFrame = overlayFrame?.isValid == true ? overlayFrame : nil
+        self.overlayOpacity = min(1, max(0.2, overlayOpacity))
+        self.captureQuality = captureQuality
+    }
+
+    static func overlayStorageKey(for target: ResolvedTarget) -> String {
+        "\(overlayApplicationKey(for: target))::\(displayTitle(
+            target.window.title,
+            fallback: target.window.owningApplication?.applicationName
+                ?? target.descriptor.ownerName
+                ?? "window"
+        ))"
+    }
+
+    static func overlayFallbackStorageKey(for target: ResolvedTarget) -> String {
+        overlayApplicationKey(for: target)
+    }
+
+    private static func overlayApplicationKey(for target: ResolvedTarget) -> String {
+        target.window.owningApplication?.bundleIdentifier
+            ?? target.descriptor.ownerBundleIdentifier
+            ?? target.window.owningApplication?.applicationName
+            ?? target.descriptor.ownerName
+            ?? "app"
     }
 
     var state: PinState {
@@ -157,7 +192,9 @@ final class PinSession {
 
         let image: CGImage
         do {
-            image = try captureView.makeFrozenImage()
+            image = try captureView.makeFrozenImage(
+                maxPixels: captureQuality.maximumPixelCount
+            )
         } catch {
             throw PinSessionError.freezeFailed(error.localizedDescription)
         }
@@ -242,7 +279,6 @@ final class PinSession {
         let previousFrame = descriptor.bounds
         descriptor = currentDescriptor.preservingOwnerMetadata(from: descriptor)
         coordinateSpace = currentCoordinateSpace
-        updatePanelFrame(to: currentDescriptor.bounds)
 
         if previousFrame.size != currentDescriptor.bounds.size {
             scheduleCaptureResize(to: currentDescriptor.bounds.size)
@@ -279,6 +315,7 @@ final class PinSession {
             errorMessage = error.localizedDescription
         }
 
+        persistOverlayFrame()
         hidePresentation()
         captureView?.clearAllPixels()
         let detachedCycle = detachCurrentCycle()
@@ -390,7 +427,6 @@ final class PinSession {
     ) async throws {
         updateTarget(target)
         createPresentationIfNeeded()
-        updatePanelFrame(to: target.descriptor.bounds)
         if !preservingFrozenImage {
             captureView?.clearAllPixels()
         }
@@ -659,12 +695,17 @@ final class PinSession {
     private func createPresentationIfNeeded() {
         guard panel == nil else { return }
 
-        let frame = coordinateSpace.appKitFrame(fromQuartzFrame: descriptor.bounds)
+        let sourceFrame = coordinateSpace.appKitFrame(fromQuartzFrame: descriptor.bounds)
+        let savedFrame = initialOverlayFrame.map(Self.nsRect(from:))
+        let frame = FloatingControlsLayout.recoveredFrame(
+            source: savedFrame ?? sourceFrame,
+            visibleScreens: NSScreen.screens.map(\.visibleFrame)
+        )
         let view = CaptureView(frame: NSRect(origin: .zero, size: frame.size))
         view.autoresizingMask = [.width, .height]
         let panel = NSPanel(
             contentRect: frame,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless, .nonactivatingPanel, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -681,13 +722,17 @@ final class PinSession {
         panel.isOpaque = false
         panel.hasShadow = false
         panel.hidesOnDeactivate = false
-        panel.ignoresMouseEvents = true
-        panel.isMovable = false
+        panel.alphaValue = overlayOpacity
+        panel.minSize = NSSize(width: 160, height: 90)
+        panel.ignoresMouseEvents = !layoutMode
+        panel.isMovable = layoutMode
+        panel.isMovableByWindowBackground = layoutMode
         panel.isReleasedWhenClosed = false
         panel.sharingType = .none
 
         self.panel = panel
         captureView = view
+        view.setLayoutMode(layoutMode)
         if let presentationModel {
             let controls = PinControlsPanel(
                 contentRect: NSRect(x: frame.minX, y: frame.maxY, width: 380, height: 78),
@@ -706,11 +751,12 @@ final class PinSession {
 
     func reconcileDisplayArrangement() {
         guard let panel else { return }
-        if case .frozen = state {
-            let recovered = FloatingControlsLayout.recoveredFrame(
-                source: panel.frame, visibleScreens: NSScreen.screens.map(\.visibleFrame)
-            )
-            if recovered != panel.frame { panel.setFrame(recovered, display: true) }
+        let recovered = FloatingControlsLayout.recoveredFrame(
+            source: panel.frame, visibleScreens: NSScreen.screens.map(\.visibleFrame)
+        )
+        if recovered != panel.frame {
+            panel.setFrame(recovered, display: true)
+            persistOverlayFrame()
         }
         positionControls()
     }
@@ -751,12 +797,53 @@ final class PinSession {
         windowTitle = Self.displayTitle(target.window.title, fallback: applicationName)
     }
 
-    private func updatePanelFrame(to quartzFrame: CGRect) {
-        let appKitFrame = coordinateSpace.appKitFrame(fromQuartzFrame: quartzFrame)
-        guard appKitFrame.width > 0, appKitFrame.height > 0 else { return }
-        if panel?.frame != appKitFrame { panel?.setFrame(appKitFrame, display: true) }
-        // Screen usable bounds can change even when the source window does not.
+    func setLayoutMode(_ enabled: Bool) {
+        layoutMode = enabled
+        guard let panel else { return }
+        panel.ignoresMouseEvents = !enabled
+        panel.isMovable = enabled
+        panel.isMovableByWindowBackground = enabled
+        captureView?.setLayoutMode(enabled)
+        if enabled {
+            panel.orderFrontRegardless()
+        } else {
+            persistOverlayFrame()
+        }
         positionControls()
+    }
+
+    func setOverlayOpacity(_ value: Double) {
+        overlayOpacity = min(1, max(0.2, value))
+        panel?.alphaValue = overlayOpacity
+    }
+
+    func setCaptureQuality(_ quality: OverlayCaptureQuality) {
+        guard captureQuality != quality else { return }
+        captureQuality = quality
+        if currentCycle != nil {
+            scheduleCaptureResize(to: descriptor.bounds.size)
+        }
+    }
+
+    private func persistOverlayFrame() {
+        guard let frame = panel?.frame else { return }
+        let overlayFrame = OverlayFrame(
+            x: Double(frame.origin.x),
+            y: Double(frame.origin.y),
+            width: Double(frame.size.width),
+            height: Double(frame.size.height)
+        )
+        guard overlayFrame.isValid else { return }
+        onOverlayFrameChanged?(overlayFrame)
+    }
+
+    private static func nsRect(from frame: OverlayFrame) -> NSRect {
+        NSRect(
+            x: CGFloat(frame.x),
+            y: CGFloat(frame.y),
+            width: CGFloat(frame.width),
+            height: CGFloat(frame.height)
+        )
     }
 
     private func scheduleCaptureResize(to pointSize: CGSize) {
@@ -801,7 +888,8 @@ final class PinSession {
         let dimensions = LiveCaptureSizing.fittedDimensions(
             pointWidth: Double(pointSize.width),
             pointHeight: Double(pointSize.height),
-            pointScale: Double(pointScale)
+            pointScale: Double(pointScale),
+            maxPixels: captureQuality.maximumPixelCount
         ) ?? PixelDimensions(width: 2, height: 2)
         configuration.width = dimensions.width
         configuration.height = dimensions.height

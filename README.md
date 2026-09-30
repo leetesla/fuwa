@@ -32,12 +32,17 @@ Real native interactions use English Fuwa UI and public sample documents, with C
 1. Launch Fuwa and bring the target window to the front.
 2. Press `⌥⌘P` to pin it. Press the shortcut again while the same source is in front to unpin.
 3. Manage pins and live or frozen state from the menu bar.
+4. Press `⌥⌘L` to enter Layout Mode. Drag or resize an overlay, then press the shortcut again to restore full click-through.
+5. In Settings, adjust overlay opacity and choose Economy (4 MP), High (9 MP), or Ultra (16 MP) capture quality.
 
 ## Features
 
 - Pin multiple windows and freeze frames.
 - Support for application windows and system previews of images and documents.
-- Customizable keyboard shortcut.
+- Customizable shortcuts for pinning and Layout Mode.
+- Pinned overlays keep their own position and size instead of following the source window.
+- Layout Mode temporarily enables drag/resize; normal mode restores full mouse click-through.
+- Adjustable overlay opacity and 4/9/16 MP capture-quality presets for high-resolution displays.
 - Mirrors pass mouse input through; `Reveal Source` activates and raises the real source window.
 - Window pixels and metadata stay on your computer, with no uploads, analytics, or telemetry.
 - Check, download, and install Ed25519-verified updates from Settings. No automatic background checks or installs.

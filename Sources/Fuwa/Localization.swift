@@ -79,6 +79,15 @@ enum FuwaString: String, CaseIterable, Sendable {
     case openLoginItems
     case shortcut
     case shortcutNote
+    case layoutShortcut
+    case layoutShortcutNote
+    case overlay
+    case overlayOpacity
+    case captureQuality
+    case qualityEconomy
+    case qualityHigh
+    case qualityUltra
+    case layoutModeActive
     case shortcutInactive
     case recordShortcut
     case pressShortcut
@@ -191,8 +200,17 @@ struct FuwaCopy: Sendable {
         .launchAtLogin: "Launch at Login",
         .launchAtLoginApproval: "Approve Fuwa in System Settings → General → Login Items.",
         .openLoginItems: "Open Login Items",
-        .shortcut: "Global Shortcut",
+        .shortcut: "Pin Shortcut",
         .shortcutNote: "Pin or unpin the front window, even while Fuwa is in the background.",
+        .layoutShortcut: "Layout Mode Shortcut",
+        .layoutShortcutNote: "Temporarily make overlays draggable and resizable. Press it again to restore full click-through.",
+        .overlay: "Overlay",
+        .overlayOpacity: "Opacity",
+        .captureQuality: "Capture Quality",
+        .qualityEconomy: "Economy · 4 MP",
+        .qualityHigh: "High · 9 MP",
+        .qualityUltra: "Ultra · 16 MP",
+        .layoutModeActive: "Layout mode is active. Overlays accept mouse input until you toggle it off.",
         .shortcutInactive: "The global shortcut is currently inactive. Record a new shortcut to turn it back on.",
         .recordShortcut: "Change",
         .pressShortcut: "Press a new shortcut…",
@@ -280,8 +298,17 @@ struct FuwaCopy: Sendable {
         .launchAtLogin: "登录时启动",
         .launchAtLoginApproval: "需要在“系统设置 → 通用 → 登录项”中批准 Fuwa。",
         .openLoginItems: "打开登录项",
-        .shortcut: "全局快捷键",
+        .shortcut: "固定窗口快捷键",
         .shortcutNote: "固定或取消固定最前方的窗口，Fuwa 在后台时也可使用。",
+        .layoutShortcut: "布局模式快捷键",
+        .layoutShortcutNote: "临时让 Overlay 可拖动和调整大小；再次按下后恢复全区域点击穿透。",
+        .overlay: "Overlay",
+        .overlayOpacity: "透明度",
+        .captureQuality: "捕获画质",
+        .qualityEconomy: "节能 · 4 MP",
+        .qualityHigh: "高清 · 9 MP",
+        .qualityUltra: "超清 · 16 MP",
+        .layoutModeActive: "布局模式已开启；关闭前 Overlay 会接收鼠标操作。",
         .shortcutInactive: "全局快捷键当前未启用。请录制一个新快捷键以重新启用。",
         .recordShortcut: "更改",
         .pressShortcut: "请按新的快捷键…",

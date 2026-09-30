@@ -4,11 +4,14 @@ import SwiftUI
 
 @MainActor
 struct ShortcutRecorder: View {
-    @ObservedObject var model: AppModel
+    let title: String
+    let shortcut: KeyboardShortcut
+    let isUpdating: Bool
+    let copy: FuwaCopy
+    let onCapture: @MainActor (KeyboardShortcut) -> Void
+
     @State private var isRecording = false
     @State private var hasInvalidInput = false
-
-    private var copy: FuwaCopy { model.copy }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
@@ -21,7 +24,7 @@ struct ShortcutRecorder: View {
                 }
             } label: {
                 HStack(spacing: 7) {
-                    if model.isUpdatingShortcut {
+                    if isUpdating {
                         ProgressView()
                             .controlSize(.mini)
                     } else {
@@ -33,7 +36,7 @@ struct ShortcutRecorder: View {
                         .font(.system(.callout, design: .monospaced).weight(.medium))
                         .monospacedDigit()
 
-                    if !isRecording && !model.isUpdatingShortcut {
+                    if !isRecording && !isUpdating {
                         Text(copy.text(.recordShortcut))
                             .font(.callout)
                             .foregroundStyle(FuwaAppearance.secondaryText)
@@ -42,7 +45,7 @@ struct ShortcutRecorder: View {
                 .frame(minWidth: 92)
             }
             .buttonStyle(FuwaQuietButtonStyle())
-            .disabled(model.isUpdatingShortcut)
+            .disabled(isUpdating)
             .help(isRecording ? copy.text(.cancel) : copy.text(.recordShortcut))
             .accessibilityLabel(accessibilityTitle)
 
@@ -60,7 +63,7 @@ struct ShortcutRecorder: View {
                 onCapture: { shortcut in
                     isRecording = false
                     hasInvalidInput = false
-                    model.proposeShortcut(shortcut)
+                    onCapture(shortcut)
                 },
                 onInvalid: {
                     hasInvalidInput = true
@@ -84,22 +87,23 @@ struct ShortcutRecorder: View {
         if isRecording {
             return copy.text(.pressShortcut)
         }
-        return model.shortcut.displayString
+        return shortcut.displayString
     }
 
     private var accessibilityTitle: String {
         if isRecording {
             return copy.text(.pressShortcut)
         }
-        return "\(copy.text(.shortcut)): \(model.shortcut.displayString)"
+        return "\(copy.text(.shortcut)): \(shortcut.displayString)"
     }
 }
 
+@MainActor
 private struct ShortcutCaptureHost: NSViewRepresentable {
     let isRecording: Bool
-    let onCapture: (FuwaCore.KeyboardShortcut) -> Void
-    let onInvalid: () -> Void
-    let onCancel: () -> Void
+    let onCapture: @MainActor (FuwaCore.KeyboardShortcut) -> Void
+    let onInvalid: @MainActor () -> Void
+    let onCancel: @MainActor () -> Void
 
     func makeNSView(context: Context) -> ShortcutCaptureNSView {
         let view = ShortcutCaptureNSView()
@@ -121,9 +125,9 @@ private struct ShortcutCaptureHost: NSViewRepresentable {
 
 @MainActor
 private final class ShortcutCaptureNSView: NSView {
-    var onCapture: ((FuwaCore.KeyboardShortcut) -> Void)?
-    var onInvalid: (() -> Void)?
-    var onCancel: (() -> Void)?
+    var onCapture: (@MainActor (FuwaCore.KeyboardShortcut) -> Void)?
+    var onInvalid: (@MainActor () -> Void)?
+    var onCancel: (@MainActor () -> Void)?
 
     private var isRecording = false
 

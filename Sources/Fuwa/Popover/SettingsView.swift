@@ -47,26 +47,37 @@ struct SettingsView: View {
 
                 Divider().padding(.horizontal, 14)
 
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 12) {
-                        shortcutDescription
-                        Spacer(minLength: 10)
-                        ShortcutRecorder(model: model)
-                            .frame(maxWidth: 170, alignment: .trailing)
-                    }
+                shortcutRow(
+                    title: copy.text(.shortcut),
+                    note: copy.text(.shortcutNote),
+                    shortcut: model.shortcut,
+                    isActive: model.shortcutIsActive,
+                    isUpdating: model.isUpdatingShortcut,
+                    onChange: model.proposeShortcut
+                )
+                .padding(14)
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        shortcutDescription
-                        ShortcutRecorder(model: model)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+                Divider().padding(.horizontal, 14)
+
+                shortcutRow(
+                    title: copy.text(.layoutShortcut),
+                    note: copy.text(.layoutShortcutNote),
+                    shortcut: model.layoutShortcut,
+                    isActive: model.layoutShortcutIsActive,
+                    isUpdating: model.isUpdatingLayoutShortcut,
+                    onChange: model.proposeLayoutShortcut
+                )
                 .padding(14)
 
                 Divider().padding(.horizontal, 14)
 
                 launchAtLoginControls
                 .padding(14)
+
+                sectionDivider
+                sectionTitle(copy.text(.overlay))
+                overlayControls
+                    .padding(14)
 
                 sectionDivider
                 sectionTitle(copy.text(.softwareUpdate))
@@ -255,24 +266,104 @@ struct SettingsView: View {
             .keyboardShortcut("q", modifiers: .command)
     }
 
-    private var shortcutDescription: some View {
+    private func shortcutRow(
+        title: String,
+        note: String,
+        shortcut: KeyboardShortcut,
+        isActive: Bool,
+        isUpdating: Bool,
+        onChange: @escaping @MainActor (KeyboardShortcut) -> Void
+    ) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                shortcutDescription(title: title, note: note, isActive: isActive)
+                Spacer(minLength: 10)
+                ShortcutRecorder(
+                    title: title,
+                    shortcut: shortcut,
+                    isUpdating: isUpdating,
+                    copy: copy,
+                    onCapture: onChange
+                )
+                .frame(maxWidth: 170, alignment: .trailing)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                shortcutDescription(title: title, note: note, isActive: isActive)
+                ShortcutRecorder(
+                    title: title,
+                    shortcut: shortcut,
+                    isUpdating: isUpdating,
+                    copy: copy,
+                    onCapture: onChange
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func shortcutDescription(
+        title: String,
+        note: String,
+        isActive: Bool
+    ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(copy.text(.shortcut))
+            Text(title)
                 .font(FuwaTypography.settingTitle)
 
-            Text(copy.text(.shortcutNote))
+            Text(note)
                 .font(FuwaTypography.explanation)
                 .foregroundStyle(FuwaAppearance.secondaryText)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if !model.shortcutIsActive {
+            if !isActive {
                 Label(copy.text(.shortcutInactive), systemImage: "exclamationmark.circle")
                     .font(.caption)
                     .foregroundStyle(Color.orange)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityElement(children: .combine)
             }
+        }
+    }
+
+    private var overlayControls: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if model.isLayoutModeEnabled {
+                Label(copy.text(.layoutModeActive), systemImage: "move.3d")
+                    .font(.caption)
+                    .foregroundStyle(Color.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 12) {
+                Text(copy.text(.overlayOpacity))
+                    .font(FuwaTypography.settingTitle)
+                Slider(
+                    value: Binding(
+                        get: { model.overlayOpacity },
+                        set: { model.setOverlayOpacity($0) }
+                    ),
+                    in: 0.2...1
+                )
+                Text(model.overlayOpacity.formatted(.percent.precision(.fractionLength(0))))
+                    .font(.callout.monospacedDigit())
+                    .frame(width: 48, alignment: .trailing)
+            }
+
+            Picker(
+                copy.text(.captureQuality),
+                selection: Binding(
+                    get: { model.captureQuality },
+                    set: { model.setCaptureQuality($0) }
+                )
+            ) {
+                Text(copy.text(.qualityEconomy)).tag(OverlayCaptureQuality.economy)
+                Text(copy.text(.qualityHigh)).tag(OverlayCaptureQuality.high)
+                Text(copy.text(.qualityUltra)).tag(OverlayCaptureQuality.ultra)
+            }
+            .pickerStyle(.menu)
+            .font(FuwaTypography.settingTitle)
         }
     }
 

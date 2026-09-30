@@ -35,6 +35,10 @@ final class PinCoordinator {
     weak var presentationModel: AppModel?
     var onPinsChanged: (([PinSnapshot]) -> Void)?
     var onFailure: ((Error) -> Void)?
+    var onLayoutModeChanged: ((Bool) -> Void)?
+
+    var overlayFrameProvider: ((String) -> OverlayFrame?)?
+    var overlayFrameSaver: ((String, OverlayFrame) -> Void)?
 
     private let resolver = TargetResolver()
     private var displayObserver: NSObjectProtocol?
@@ -45,6 +49,9 @@ final class PinCoordinator {
     private var pendingPinRequests = PendingPinRequests()
     private var pendingSessionOperations = Set<UUID>()
     private var operationGeneration: UInt64 = 0
+    private var layoutMode = false
+    private var overlayOpacity: Double = 0.55
+    private var captureQuality: OverlayCaptureQuality = .ultra
 
     init() {
         tracker = WindowTracker()
@@ -77,6 +84,39 @@ final class PinCoordinator {
 
     var pinCount: Int {
         sessionsByID.count
+    }
+
+    var isLayoutModeEnabled: Bool {
+        layoutMode
+    }
+
+    @discardableResult
+    func toggleLayoutMode() -> Bool {
+        setLayoutMode(!layoutMode)
+        return layoutMode
+    }
+
+    func setLayoutMode(_ enabled: Bool) {
+        guard layoutMode != enabled else { return }
+        layoutMode = enabled
+        for session in sessionsByID.values {
+            session.setLayoutMode(enabled)
+        }
+        onLayoutModeChanged?(enabled)
+    }
+
+    func setOverlayOpacity(_ value: Double) {
+        overlayOpacity = min(1, max(0.2, value))
+        for session in sessionsByID.values {
+            session.setOverlayOpacity(overlayOpacity)
+        }
+    }
+
+    func setCaptureQuality(_ quality: OverlayCaptureQuality) {
+        captureQuality = quality
+        for session in sessionsByID.values {
+            session.setCaptureQuality(quality)
+        }
     }
 
     func focusControls(_ id: UUID) {
@@ -144,8 +184,21 @@ final class PinCoordinator {
             return
         }
 
-        let session = PinSession(target: target)
+        let overlayStorageKey = PinSession.overlayStorageKey(for: target)
+        let overlayFallbackStorageKey = PinSession.overlayFallbackStorageKey(for: target)
+        let session = PinSession(
+            target: target,
+            overlayFrame: overlayFrameProvider?(overlayStorageKey)
+                ?? overlayFrameProvider?(overlayFallbackStorageKey),
+            overlayOpacity: overlayOpacity,
+            captureQuality: captureQuality
+        )
         session.presentationModel = presentationModel
+        session.setLayoutMode(layoutMode)
+        session.onOverlayFrameChanged = { [weak self] frame in
+            self?.overlayFrameSaver?(overlayStorageKey, frame)
+            self?.overlayFrameSaver?(overlayFallbackStorageKey, frame)
+        }
         configureCallbacks(for: session)
         sessionsByID[session.id] = session
         sessionIDByWindowID[session.sourceWindowID] = session.id
@@ -219,6 +272,10 @@ final class PinCoordinator {
         session.onFailure = nil
         session.onScreenRecordingRevoked = nil
         session.prepareForStop()
+        session.onOverlayFrameChanged = nil
+        if sessionsByID.isEmpty, layoutMode {
+            setLayoutMode(false)
+        }
         updateTrackerActivity()
         publishSnapshots()
         await session.stop()
@@ -241,6 +298,9 @@ final class PinCoordinator {
 
     private func prepareToClearAll() -> [PinSession] {
         operationGeneration &+= 1
+        if layoutMode {
+            setLayoutMode(false)
+        }
         let sessions = insertionOrder.compactMap { sessionsByID[$0] }
         sessionsByID.removeAll()
         sessionIDByWindowID.removeAll()
@@ -255,6 +315,7 @@ final class PinCoordinator {
             session.onFailure = nil
             session.onScreenRecordingRevoked = nil
             session.prepareForStop()
+            session.onOverlayFrameChanged = nil
         }
         publishSnapshots()
 
@@ -320,6 +381,10 @@ final class PinCoordinator {
         session.onFailure = nil
         session.onScreenRecordingRevoked = nil
         session.prepareForStop()
+        session.onOverlayFrameChanged = nil
+        if sessionsByID.isEmpty, layoutMode {
+            setLayoutMode(false)
+        }
         updateTrackerActivity()
         publishSnapshots()
         await session.stop()

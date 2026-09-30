@@ -84,6 +84,38 @@ struct PresentationTests {
         #expect(store.language == .system)
     }
 
+    @Test func overlaySettingsPersistAcrossRelaunch() throws {
+        let suite = "FuwaOverlaySettingsTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let store = AppSettingsStore(defaults: defaults)
+        #expect(store.layoutShortcut == .defaultLayout)
+        #expect(abs(store.overlayOpacity - 0.55) < 0.0001)
+        #expect(store.captureQuality == .ultra)
+
+        store.layoutShortcut = KeyboardShortcut(
+            keyCode: 40,
+            keyLabel: "K",
+            modifiers: [.control, .option]
+        )
+        store.overlayOpacity = 0.42
+        store.captureQuality = .high
+        let frame = OverlayFrame(x: 220, y: 140, width: 880, height: 520)
+        store.setOverlayFrame(frame, for: "com.tradingview.desktop::BTCUSDT")
+
+        let relaunched = AppSettingsStore(defaults: defaults)
+        #expect(relaunched.layoutShortcut.displayString == "⌃⌥K")
+        #expect(abs(relaunched.overlayOpacity - 0.42) < 0.0001)
+        #expect(relaunched.captureQuality == .high)
+        #expect(
+            relaunched.overlayFrame(for: "com.tradingview.desktop::BTCUSDT") == frame
+        )
+
+        relaunched.overlayOpacity = 0.05
+        #expect(abs(relaunched.overlayOpacity - 0.2) < 0.0001)
+    }
+
     @Test func allCopyKeysHaveBothLanguages() {
         for language in [FuwaLanguage.english, .simplifiedChinese] {
             let copy = FuwaCopy(language: language)
